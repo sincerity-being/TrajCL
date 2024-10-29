@@ -14,7 +14,8 @@ def parse_args():
     parser = argparse.ArgumentParser(description = "TrajCL/train.py")
     parser.add_argument('--dumpfile_uniqueid', type = str, help = 'see config.py')
     parser.add_argument('--seed', type = int, help = '')
-    parser.add_argument('--dataset', type = str, help = '')
+     # aisdk-2006-03-02@06 aisdk-2024-10-12@018 AIS_2023_12_11@31 porto  
+    parser.add_argument('--dataset', default='aisdk-2024-10-12@018', type = str, help = '')
 
     args = parser.parse_args()
     return dict(filter(lambda kv: kv[1] is not None, vars(args).items()))

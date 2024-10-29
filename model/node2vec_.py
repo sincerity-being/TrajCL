@@ -13,6 +13,7 @@ from config import Config
 def train_node2vec(edge_index):
     # edge_index: tensor [2, n]
     logging.info("[node2vec] start.")
+    logging.info(f"Config.device:{Config.device}")
 
     model = Node2Vec(edge_index, embedding_dim=Config.cell_embedding_dim, 
                     walk_length=50, context_size=10, walks_per_node=10,

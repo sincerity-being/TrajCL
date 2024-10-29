@@ -19,7 +19,7 @@ class Config:
     dumpfile_uniqueid = ''
     seed = 2000
     # device = torch.device("cpu")
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
     root_dir = os.path.abspath(__file__)[:-10] # dont use os.getcwd()
     checkpoint_dir = root_dir + '/exp/snapshots'
 
@@ -37,6 +37,12 @@ class Config:
     min_traj_len = 20
     cell_size = 100.0
     cellspace_buffer = 500.0
+
+
+    #========aisdk==================
+    datascalability = 1
+    connection_ratio = 0.99
+    dataset_statistics_csv_path=f"./result/DatasetStatistics.csv"
 
     #===========TrajCL=============
     trajcl_batch_size = 128 
@@ -100,8 +106,43 @@ class Config:
             cls.min_lat = 41.1001
             cls.max_lon = -8.5192
             cls.max_lat = 41.2086
-        else:
-            pass
+        elif 'aisdk' in cls.dataset:
+            cls.dataset_prefix = cls.dataset
+            cls.max_traj_len = 2000
+            cls.min_traj_len = 20
+            
+            cls.min_lon = -8
+            cls.min_lat = 40.000
+            cls.max_lon = 23 
+            cls.max_lat = 71
+            cls.cell_size = 10000.0
+            cls.cellspace_buffer = 500.0
+
+            # cls.min_lon = -8
+            # cls.min_lat = 40.000
+            # cls.max_lon = 13 
+            # cls.max_lat = 61
+            # cls.cell_size = 10000.0
+            # cls.cellspace_buffer = 500.0
+
+            # cls.min_lon = -8.5005
+            # cls.min_lat = 40.1001
+            # cls.max_lon = -8.0192
+            # cls.max_lat = 41.2086
+
+        elif 'AIS' in cls.dataset:
+            cls.dataset_prefix = cls.dataset
+            cls.max_traj_len = 2000
+            cls.min_traj_len = 20
+            
+            cls.min_lon = -8
+            cls.min_lat = 40.000
+            cls.max_lon = 23 
+            cls.max_lat = 71
+            cls.cell_size = 10000.0
+            cls.cellspace_buffer = 500.0
+           
+
         
         cls.dataset_file = cls.root_dir + '/data/' + cls.dataset_prefix
         cls.dataset_cell_file = cls.dataset_file + '_cell' + str(int(cls.cell_size)) + '_cellspace.pkl'

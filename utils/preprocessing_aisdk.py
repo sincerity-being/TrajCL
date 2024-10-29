@@ -14,6 +14,7 @@ import numpy as np
 import traj_dist.distance as tdist
 import multiprocessing as mp
 from functools import partial
+import argparse
 
 from config import Config
 from utils import tool_funcs
@@ -22,6 +23,7 @@ from utils.tool_funcs import lonlat2meters
 from model.node2vec_ import train_node2vec
 from utils.edwp import edwp
 from utils.data_loader import read_trajsimi_traj_dataset
+from utils.aisdk_data_process_module import load_ais_dataset
 
 
 def inrange(lon, lat):
@@ -31,20 +33,27 @@ def inrange(lon, lat):
     return True
 
 
-def clean_and_output_data():
+def clean_and_output_data(traj_df):
     _time = time.time()
     # https://archive.ics.uci.edu/ml/machine-learning-databases/00339/
     # download train.csv.zip and unzip it. rename train.csv to porto.csv
-    dfraw = pd.read_csv(Config.root_dir + '/data/porto.csv')
-    dfraw = dfraw.rename(columns = {"POLYLINE": "wgs_seq"})
+    # dfraw = pd.read_csv(Config.root_dir + '/data/porto.csv')
+    # dfraw = dfraw.rename(columns = {"POLYLINE": "wgs_seq"})
 
-    dfraw = dfraw[dfraw.MISSING_DATA == False]
+    # dfraw = dfraw[dfraw.MISSING_DATA == False]
+    dfraw = traj_df
 
     # length requirement
-    dfraw.wgs_seq = dfraw.wgs_seq.apply(literal_eval)
+    # dfraw.wgs_seq = dfraw.wgs_seq.apply(literal_eval)
     dfraw['trajlen'] = dfraw.wgs_seq.apply(lambda traj: len(traj))
-    dfraw = dfraw[(dfraw.trajlen >= Config.min_traj_len) & (dfraw.trajlen <= Config.max_traj_len)]
-    logging.info('Preprocessed-rm length. #traj={}'.format(dfraw.shape[0]))
+    # dfraw = dfraw[(dfraw.trajlen >= Config.min_traj_len) & (dfraw.trajlen <= Config.max_traj_len)]
+    # dfraw = dfraw[dfraw['traj_mbr'].apply(lambda mbr: 
+    #     mbr[0] >= Config.min_lon and  # min_lon
+    #     mbr[1] >= Config.min_lat and  # min_lat
+    #     mbr[2] <= Config.max_lon and  # max_lon
+    #     mbr[3] <= Config.max_lat      # max_lat
+    # )]
+    # logging.info('Preprocessed-rm length. #traj={}'.format(dfraw.shape[0]))
     
     # range requirement
     dfraw['inrange'] = dfraw.wgs_seq.map(lambda traj: sum([inrange(p[0], p[1]) for p in traj]) == len(traj) ) # True: valid
@@ -283,18 +292,44 @@ def _simi_comp_operator(fn, df_trajs, sub_idx):
     return simi
 
 
+def parse_args():
+    # dont set default value here! -- it will incorrectly overwrite the values in config.py.
+    # config.py is the correct place for default values.
+    
+    parser = argparse.ArgumentParser(description = "TrajCL/train.py")
+     # aisdk-2024-09-16@22 0.99 aisdk-2006-03-02@06  aisdk-2024-10-12@018 AIS_2023_12_11@31
+    parser.add_argument("--dataset", type=str, default='AIS_2023_12_11@31')
+    #aisdk-2006-03-02@05 0.2, 0.4, 0.6, 0.8, 1.0
+    parser.add_argument("--datascalability", type=float, default=1)
+    # Connection Ratio
+    parser.add_argument("--connection_ratio", type=float, default=0.99)
+   
+    args = parser.parse_args()
+    return dict(filter(lambda kv: kv[1] is not None, vars(args).items()))
 
 # nohup python ./preprocessing_porto.py &> ../result &
-if __name__ == '__main__':
+def main():
+    Config.update(parse_args())
     logging.basicConfig(level = logging.DEBUG,
                         format = "[%(filename)s:%(lineno)s %(funcName)s()] -> %(message)s",
                         handlers = [logging.FileHandler(Config.root_dir+'/exp/log/'+tool_funcs.log_file_name(), mode = 'w'), 
                                     logging.StreamHandler()]
                         )
-    Config.dataset = 'porto'
-    Config.post_value_updates()
 
-    clean_and_output_data()
+
+    # Config.dataset = 'aisdk'
+    if "aisdk" in Config.dataset or "AIS" in Config.dataset:
+        traj_df, bounds, traj_data, dataset_identifier = load_ais_dataset()
+        print(f"Total Ship Number: {len(traj_data)}")
+        # Config.min_lon = bounds['min_lon']
+        # Config.min_lat = bounds['min_lat']
+        # Config.max_lon = bounds['max_lon']
+        # Config.max_lat = bounds['max_lat']
+        # Config.dataset_prefix = Config.dataset
+      
+    # Config.post_value_updates()
+
+    clean_and_output_data(traj_df)
     init_cellspace()
     generate_newsimi_test_dataset()
-    traj_simi_computation('edwp') # edr edwp discret_frechet hausdorff
+    # traj_simi_computation('edwp') # edr edwp discret_frechet hausdorff

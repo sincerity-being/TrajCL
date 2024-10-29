@@ -80,6 +80,10 @@ def generate_spatial_features(src, cs: CellSpace):
     y = (src[-1][1] - cs.y_min)/ (cs.y_max - cs.y_min)
     tgt.append( [x, y, 0.0, 0.0] )
     # tgt = [length, 4]
+    
+    if len(src) == 1:
+        tgt.pop(0)
+
     return tgt
 
 

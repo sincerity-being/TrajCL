@@ -6,11 +6,13 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
+from config import Config
 
 # Transformer example: https://github.com/pytorch/examples/blob/master/word_language_model/model.py
 
 class PositionalEncoding(nn.Module):
-    def __init__(self, emb_size: int, dropout: float, maxlen: int = 201):
+    def __init__(self, emb_size: int, dropout: float):
+        maxlen = Config.max_traj_len + 1
         super(PositionalEncoding, self).__init__()
         den = torch.exp(torch.arange(0, emb_size, 2) * (-math.log(10000)) / emb_size)
         pos = torch.arange(0, maxlen).reshape(maxlen, 1)
